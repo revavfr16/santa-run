@@ -13,8 +13,15 @@ export const DEVICE_ID = 822633; // Ambulance
 export const UPDATE_INTERVAL = 20000;
 
 // Tracking time window (military time)
-export const TRACKING_START_TIME = 1730; // 5:30 PM
+export const TRACKING_START_TIME = 1700; // 5:00 PM
 export const TRACKING_END_TIME = 2200;   // 10:00 PM
+
+// Tracking dates
+// Note: JavaScript months are 0-indexed (0=Jan, 1=Feb, ..., 11=Dec)
+export const TRACKING_DATES = [
+  { month: 11, day: 12 }, // December 12 (month 11 = December)
+  { month: 11, day: 19 }, // December 19 (month 11 = December)
+];
 
 // Map center coordinates (Reva VFR - 18230 Birmingham Road, Culpeper, VA 22701)
 export const CENTER_POSITION = [38.45186601577171, -78.09639387355408];
