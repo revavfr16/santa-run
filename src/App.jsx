@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { loadKMLRoute } from "./utils/kmlParser";
+import { loadRoute } from "./utils/kmlParser";
 import { fetchDeviceLocations, findDeviceById } from "./utils/api";
 import { isWithinTrackingHours } from "./utils/timeWindow";
 import {
@@ -66,14 +66,14 @@ export default function App() {
     };
   }, []);
 
-  // Load KML routes
+  // Load routes (KML or GeoJSON)
   useEffect(() => {
     const loadRoutes = async () => {
       try {
         const loadedRoutes = await Promise.all(
           ROUTES.map(async (route) => ({
             name: route.name,
-            coordinates: await loadKMLRoute(route.file),
+            coordinates: await loadRoute(route.file),
             color: route.color,
           }))
         );

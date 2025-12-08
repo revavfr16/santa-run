@@ -24,12 +24,12 @@ export const DEFAULT_ZOOM = 13;
 export const ROUTES = [
   {
     name: 'December 12',
-    file: '/routes/route1.kml',
-    color: 'red'
+    file: '/routes/20251212.geojson',
+    color: '#FF0000'
   },
   {
     name: 'December 19',
-    file: '/routes/route2.kml',
+    file: '/routes/20251219.geojson',
     color: 'green'
   }
 ];
