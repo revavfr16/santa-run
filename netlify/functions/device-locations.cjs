@@ -1,4 +1,15 @@
 exports.handler = async function(event, context) {
+  
+  const hideLocations = process.env.HIDE_LOCATIONS === 'true';
+
+  if (hideLocations) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locations: [] }),
+    };
+  }
+
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
