@@ -3,6 +3,9 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[functions]
+  node_bundler = "esbuild"
+
 [dev]
   command = "vite"
   port = 3000
@@ -10,11 +13,8 @@
   framework = "#custom"
   autoLaunch = false
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
+# The functions declare their own /api/... paths.
+# Everything else is the app, including /crew.
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -1,44 +1,629 @@
-@import "tailwindcss";
-@import 'mapbox-gl/dist/mapbox-gl.css';
+/*
+  The colours of the department's flyer: Christmas red, a royal-blue night,
+  white lettering, snow, and the warm gold of string lights.
+  The map fills the page; one card sits over the bottom of it.
+*/
+:root {
+  --red: #d4141c;
+  --red-deep: #a80d15;
+  --night: #0b1746;
+  --royal: #1c3aa8;
+  --snow: #ffffff;
+  --frost: #d5e0ff;
+  --lights: #ffd95a;
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --script: 'Lobster', 'Brush Script MT', cursive;
+  --text: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1f2937;
-    color: #f3f4f6;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Mapbox container */
-.mapboxgl-map {
-  width: 100%;
+html,
+body,
+#root {
   height: 100%;
 }
 
-/* Santa marker custom styling */
-.santa-marker {
-  background: none !important;
-  border: none !important;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--snow);
+  font-family: var(--text);
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+p,
+ul {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--lights);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Page */
+
+.app {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.map,
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.map-picking .mapboxgl-canvas-container {
+  cursor: crosshair;
+}
+
+/* Keep the map's own credits clear of the card. */
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  bottom: var(--card-height, 0px);
+}
+
+.map-message {
+  position: absolute;
+  inset: 6.5rem 0.75rem auto;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: var(--night);
+  box-shadow: 0 0 0 1.5px var(--snow);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Top of the map: the name, which night's route is showing, and any notice. */
+
+.top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  z-index: 3;
+  padding: calc(0.6rem + env(safe-area-inset-top)) 0.75rem 0;
+  pointer-events: none;
+}
+
+.top > * {
+  pointer-events: auto;
+}
+
+.wordmark {
+  font-family: var(--script);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--snow);
+  text-shadow:
+    0 2px 0 var(--red),
+    0 3px 8px rgb(0 0 0 / 0.6);
+}
+
+.nights-toggle {
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--night);
+  box-shadow:
+    0 0 0 1.5px var(--snow),
+    0 3px 10px rgb(0 0 0 / 0.45);
+}
+
+.nights-toggle button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--snow);
+  font: inherit;
+  font-weight: 700;
   cursor: pointer;
 }
 
-/* Mapbox popup styling */
-.mapboxgl-popup-content {
-  padding: 0;
-  border-radius: 8px;
+.nights-toggle button[aria-pressed='true'] {
+  background: var(--snow);
+  color: var(--night);
 }
 
-.mapboxgl-popup-close-button {
-  font-size: 20px;
-  padding: 4px;
+.notice {
+  /* On its own line, centred under the name and the night toggle. */
+  margin: 0 calc(50% - 6.5rem);
+  width: 13rem;
+  padding: 0.15rem 0.75rem;
+  border-radius: 999px;
+  background: var(--lights);
+  color: var(--night);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+}
+
+.recenter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--card-height, 0px) + 0.75rem);
+  z-index: 3;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.95rem 0.3rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--snow);
+  color: var(--night);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+}
+
+.recenter svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+/* The card */
+
+.card {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 0 1rem calc(1rem + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(var(--royal) -40%, var(--night) 45%);
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 0.45);
+}
+
+.card-top {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  /* Snow settled along the top edge. */
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 14' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0 0h400v6c-20 6-38 5-58 1s-34-3-52 2-40 6-62 1-38-4-56 1-36 5-56 2-40-6-58-1-38 6-58 0z'/%3E%3C/svg%3E")
+    top / 100% 11px no-repeat;
+}
+
+.card-handle {
+  display: block;
+  width: 100%;
+  height: 2.1rem;
+  margin-bottom: -0.5rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.card-handle::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 4px;
+  margin: 0.55rem auto 0;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.55);
+}
+
+.boot-link {
+  position: absolute;
+  top: 0.95rem;
+  right: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--lights);
+}
+
+.boot {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  fill: currentColor;
+}
+
+.boot-band {
+  fill: var(--lights);
+}
+
+.boot-link .boot-band {
+  fill: var(--red);
+}
+
+.card-art {
+  display: block;
+  width: calc(100% + 2rem);
+  height: auto;
+  margin: 0 -1rem;
+}
+
+/* After the run the flyer only has room on a wide screen. */
+.card-art-wide {
+  display: none;
+}
+
+.status {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.status p {
+  color: var(--frost);
+}
+
+.status-title {
+  margin: 0;
+  font-family: var(--script);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 7.4vw, 2.25rem);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.fine {
+  font-size: 0.875rem;
+  color: var(--frost);
+}
+
+.card-more {
+  display: none;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.card.is-open .card-more {
+  display: flex;
+}
+
+/* Buttons */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid rgb(255 255 255 / 0.6);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--snow);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.btn-primary {
+  min-height: 3rem;
+  border-color: var(--red);
+  background: var(--red);
+  font-size: 1.125rem;
+  box-shadow: 0 3px 0 var(--red-deep);
+}
+
+.btn-primary:hover {
+  background: #e3232b;
+}
+
+/* When Santa reaches the pin: one line per night. */
+
+.nights {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.night {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.09);
+  color: var(--snow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.night[aria-pressed='true'] {
+  border-color: rgb(255 255 255 / 0.55);
+}
+
+.night-day {
+  font-weight: 700;
+}
+
+.night-when {
+  justify-self: end;
+  text-align: right;
+  font-weight: 700;
+  color: var(--lights);
+}
+
+.night-where {
+  grid-column: 1 / -1;
+  font-size: 0.9375rem;
+  color: var(--frost);
+  text-wrap: pretty;
+}
+
+.ask {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+}
+
+.ask-prompt {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.boot-ask {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.09);
+}
+
+/* Map pins */
+
+.pin {
+  display: grid;
+  place-items: center;
+}
+
+.pin-santa {
+  width: 76px;
+}
+
+.pin-santa img {
+  position: relative;
+  display: block;
+  width: 76px;
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 3px 5px rgb(0 0 0 / 0.6));
+}
+
+.pin-santa-west img {
+  transform: scaleX(-1);
+}
+
+/* A slow glow under the engine so Santa is easy to find at a glance. */
+.pin-santa::before {
+  content: '';
+  position: absolute;
+  inset: auto -14px -10px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 217 90 / 0.85), rgb(255 217 90 / 0));
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  50% {
+    transform: scale(1.35);
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-santa::before {
+    animation: none;
+  }
+}
+
+.pin-firehouse {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--snow);
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+}
+
+.pin-firehouse svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--snow);
+}
+
+.pin-spot {
+  width: 34px;
+  cursor: grab;
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.55));
+}
+
+.pin-spot svg {
+  display: block;
+  width: 34px;
+}
+
+.pin-drop {
+  fill: var(--snow);
+  stroke: var(--night);
+  stroke-width: 1.5;
+}
+
+.pin-eye {
+  fill: var(--red);
+}
+
+.pin-me {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--snow);
+  border-radius: 50%;
+  background: #3d8bff;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
+}
+
+/* Wide screens: the card stands at the left, fully open. */
+
+@media (min-width: 860px) {
+  .card {
+    inset: 1rem auto auto 1rem;
+    width: 24rem;
+    max-height: calc(100dvh - 2rem);
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.5);
+  }
+
+  .card-handle {
+    visibility: hidden;
+  }
+
+  .card-art-wide {
+    display: block;
+  }
+
+  .card-more {
+    display: flex;
+  }
+
+  .top {
+    left: calc(var(--card-width, 0px) + 0.5rem);
+    padding-right: 1rem;
+  }
+
+  .mapboxgl-ctrl-bottom-left {
+    left: calc(var(--card-width, 0px) + 0.5rem);
+  }
+
+  .recenter {
+    left: calc(var(--card-width, 0px) + (100% - var(--card-width, 0px)) / 2);
+    bottom: 1.5rem;
+  }
+}
+
+/* Crew switch (/crew) */
+
+.crew {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  background: linear-gradient(var(--royal) -30%, var(--night) 40%);
+}
+
+.crew-panel {
+  display: grid;
+  gap: 1.1rem;
+  width: min(100%, 30rem);
+}
+
+.crew-now {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.note {
+  font-weight: 700;
+  color: var(--lights);
+}
+
+.crew-choices {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.crew-choice {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid rgb(255 255 255 / 0.6);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--snow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crew-choice strong {
+  font-size: 1.125rem;
+}
+
+.crew-choice span {
+  color: var(--frost);
+}
+
+.crew-choice:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.crew-choice:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.crew-choice[aria-pressed='true'] {
+  border-color: var(--snow);
+  background: var(--snow);
+  color: var(--night);
+}
+
+.crew-choice[aria-pressed='true'] span {
+  color: var(--night);
 }
