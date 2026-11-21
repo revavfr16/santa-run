@@ -35,11 +35,22 @@ function headline({ phase, run, next, now, santa, roadName }) {
 }
 
 const Boot = () => (
-  <svg className="boot" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M7 2.500h8.500v10.300l4.700 2.300a2.500 2.500 0 0 1 1.400 2.200V19H5.500L7 13z" />
-    <path className="boot-sole" d="M4.800 19.800h17v1.700h-17z" />
-    <path className="boot-band" d="M7 4.800h8.500v2.200H7z" />
+  <svg className="boot" viewBox="0 0 32 32" aria-hidden="true">
+    <path d="M9 3h11v13.500l6.200 2.700a4 4 0 0 1 2.300 3.600V25H7.500L9 16z" />
+    <rect className="boot-band" x="9" y="6.500" width="11" height="3.200" />
+    <rect x="6.500" y="26" width="23" height="3.200" rx="1.200" />
   </svg>
+);
+
+/** The donation button: the firefighter's boot, passed around for change. */
+const FillTheBoot = () => (
+  <a className="btn btn-boot" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+    <Boot />
+    <span>
+      <strong>Fill the boot</strong>
+      <small>Donate to Reva VFR</small>
+    </span>
+  </a>
 );
 
 function where(night) {
@@ -52,8 +63,8 @@ function where(night) {
 const WHEN = {
   passed: () => 'Santa has passed',
   here: () => 'Almost here. Head outside!',
-  close: (night) => night.when.replace(/^a/, 'A'),
-  planned: (night) => night.when.replace(/^b/, 'B'),
+  close: (night) => night.when[0].toUpperCase() + night.when.slice(1),
+  planned: (night) => night.when[0].toUpperCase() + night.when.slice(1),
 };
 
 /** The card over the bottom of the map: where Santa is, and when he reaches you. */
@@ -77,7 +88,11 @@ export default function Card({
   onRemove,
   onCancel,
 }) {
-  const [open, setOpen] = useState(false);
+  // How much of the card shows on a phone: just its top, the usual amount, or all of it.
+  const [detent, setDetent] = useState('peek'); // 'min' | 'peek' | 'open'
+  const open = detent === 'open';
+  const raise = () => setDetent((now) => (now === 'min' ? 'peek' : 'open'));
+  const lower = () => setDetent((now) => (now === 'open' ? 'peek' : 'min'));
   const [shared, setShared] = useState(false);
   const swipe = useRef(null);
   const [title, detail] = headline({ phase, run, next, now, santa, roadName });
@@ -88,7 +103,7 @@ export default function Card({
 
   // Get out of the way of the map while someone is placing a pin.
   useEffect(() => {
-    if (asking === 'picking') setOpen(false);
+    if (asking === 'picking') setDetent('peek');
   }, [asking]);
 
   const share = async () => {
@@ -118,28 +133,22 @@ export default function Card({
     if (swipe.current == null) return;
     const moved = event.changedTouches[0].clientY - swipe.current;
     swipe.current = null;
-    if (moved < -40) setOpen(true);
-    if (moved > 40) setOpen(false);
+    if (moved < -40) raise();
+    if (moved > 40) lower();
   };
 
   return (
-    <main ref={cardRef} className={`card${open ? ' is-open' : ''}`}>
+    <main ref={cardRef} className={`card is-${detent}`}>
       <div className="card-top" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <button
           type="button"
           className="card-handle"
           aria-expanded={open}
           aria-controls="card-more"
-          onClick={() => setOpen((value) => !value)}
+          onClick={open ? lower : raise}
         >
-          <span className="visually-hidden">{open ? 'Show less' : 'Show more'}</span>
+          <span className="visually-hidden">{open ? 'Show less' : detent === 'min' ? 'Show the card' : 'Show more'}</span>
         </button>
-
-        {!askForDonation && (
-          <a className="boot-link" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
-            <Boot /> Fill the boot
-          </a>
-        )}
 
         {showArt && (
           <img
@@ -196,13 +205,14 @@ export default function Card({
       )}
 
       {askForDonation && (
-        <div className="boot-ask">
-          <p>Santa rides with your volunteers. Help keep the engines rolling.</p>
-          <a className="btn btn-primary" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
-            <Boot /> Fill the boot
-          </a>
-        </div>
+        <p className="boot-ask">Santa rides with your volunteers. Help keep the engines rolling.</p>
       )}
+      <div className="row row-actions">
+        <FillTheBoot />
+        <button type="button" className="btn" onClick={share}>
+          {shared ? 'Link copied' : 'Share this page'}
+        </button>
+      </div>
 
       <div className="card-more" id="card-more">
         {hasPin && !asking && (
@@ -215,11 +225,6 @@ export default function Card({
             </button>
           </div>
         )}
-        <div className="row">
-          <button type="button" className="btn" onClick={share}>
-            {shared ? 'Link copied' : 'Share this page'}
-          </button>
-        </div>
         <p className="fine">
           {['live', 'paused', 'before', 'hold'].includes(phase)
             ? 'Listen for sirens and music, then come out to the road. Times are estimates, and weather can slow Santa down.'

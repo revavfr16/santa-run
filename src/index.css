@@ -225,7 +225,7 @@ a {
 .card-handle {
   display: block;
   width: 100%;
-  height: 2.1rem;
+  height: 1.9rem;
   margin-bottom: -0.5rem;
   border: 0;
   background: transparent;
@@ -240,33 +240,6 @@ a {
   margin: 0.55rem auto 0;
   border-radius: 2px;
   background: rgb(255 255 255 / 0.55);
-}
-
-.boot-link {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--lights);
-}
-
-.boot {
-  width: 1.15em;
-  height: 1.15em;
-  flex: none;
-  fill: currentColor;
-}
-
-.boot-band {
-  fill: var(--lights);
-}
-
-.boot-link .boot-band {
-  fill: var(--red);
 }
 
 .card-art {
@@ -418,11 +391,55 @@ a {
 }
 
 .boot-ask {
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+/* Fill the boot sits beside Share, in the gold of the string lights. */
+.row-actions {
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.row-actions .btn {
+  flex: 1 1 0;
+  padding-inline: 0.6rem;
+}
+
+.btn-boot {
+  flex-grow: 1.35 !important;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  border-color: var(--lights);
+  background: var(--lights);
+  color: var(--night);
+  text-align: left;
+  box-shadow: 0 3px 0 #c9a02c;
+}
+
+.btn-boot:hover {
+  background: #ffe27d;
+}
+
+.btn-boot span {
   display: grid;
-  gap: 0.6rem;
-  padding: 0.8rem;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 0.09);
+  line-height: 1.15;
+}
+
+.btn-boot small {
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.boot {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: none;
+  fill: var(--night);
+}
+
+.boot-band {
+  fill: var(--red);
 }
 
 /* Map pins */
@@ -514,6 +531,26 @@ a {
   border-radius: 50%;
   background: #3d8bff;
   box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
+}
+
+/* Swiped down, the card is only its handle and headline, and the map has the screen. */
+@media (max-width: 859.98px) {
+  .card.is-min > :not(.card-top),
+  .card.is-min .card-art,
+  .card.is-min .status > :not(.status-title) {
+    display: none;
+  }
+
+  .card.is-min {
+    padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
+  }
+
+  .card.is-min .status-title {
+    overflow: hidden;
+    font-size: 1.5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* Wide screens: the card stands at the left, fully open. */

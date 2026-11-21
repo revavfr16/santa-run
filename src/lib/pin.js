@@ -85,7 +85,13 @@ export function describeNights({ pin, routes, plans, now, live, finishedRunId })
     if (santaAlong == null) {
       const along = alongs[0];
       // Before he sets off, or while we can't place him: the plan, never a time already gone.
-      const time = Math.max(plan.timeAt(along), tonight ? now.getTime() + 10 * MINUTE : 0);
+      const planned = plan.timeAt(along);
+      const start = run.startAt.getTime();
+      // The first few minutes of the route don't need a half-hour window.
+      if (planned - start < 15 * MINUTE && now.getTime() < start) {
+        return { ...base, point: pointAt(route, along), state: 'planned', when: `just after ${formatTime(run.startAt)}` };
+      }
+      const time = Math.max(planned, tonight ? now.getTime() + 10 * MINUTE : 0);
       return { ...base, point: pointAt(route, along), state: 'planned', when: windowAround(time, tonight ? 5 : 15, run.startAt.getTime()) };
     }
 
