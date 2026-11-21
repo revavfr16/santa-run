@@ -39,7 +39,7 @@ export const formatWeekday = (date) => weekday.format(date);
 export const formatShortDay = (date) => `${shortWeekday.format(date)} ${dayOfMonth.format(date)}`;
 /** "4:00 pm" */
 export const formatTime = (date) => clock.format(date).replace(/\s?([AP])M$/, (_, half) => ` ${half.toLowerCase()}m`);
-export const isSameDay = (a, b) => dayKey.format(a) === dayKey.format(b);
+const isSameDay = (a, b) => dayKey.format(a) === dayKey.format(b);
 
 export function formatDuration(ms) {
   const minutes = Math.max(1, Math.round(ms / 60000));
@@ -57,7 +57,7 @@ export function formatDuration(ms) {
  *   live    Santa is out
  *   paused  Santa is out but the crew has paused tracking
  *   hold    a run is scheduled now but the crew has tracking switched off
- *   done    tonight's run has finished
+ *   done    tonight's run has finished (the server says so once Santa is home)
  *   over    no runs left this year
  *
  * `run` is the run that matters most right now. The server's answer wins over
@@ -69,6 +69,7 @@ export function getPhase(now, serverStatus, answered = false) {
   const previous = [...RUNS].reverse().find((run) => run.endAt < now) || null;
   const run = active || next || previous;
 
+  if (serverStatus === 'done' && (active || previous)) return { phase: 'done', run: active || previous, next };
   if (serverStatus === 'paused') return { phase: 'paused', run, next };
   if (serverStatus === 'live') return { phase: 'live', run, next };
   if (active) return { phase: answered ? 'hold' : 'live', run, next };

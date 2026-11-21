@@ -1,5 +1,6 @@
-// Run dates, times, landmarks and route files live in schedule.json, which
-// the server function reads too. Everything else is here.
+// Run dates, times, landmarks, route files and the firehouse live in
+// schedule.json, which the server functions read too. Everything else is here.
+import schedule from './schedule.json';
 
 export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 
@@ -9,7 +10,7 @@ export const MAPBOX_STYLE =
   import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/navigation-night-v1';
 
 // Reva VFR, 18230 Birmingham Road, Culpeper, VA 22701 — [lng, lat]
-export const FIREHOUSE = [-78.09639387355408, 38.45186601577171];
+export const FIREHOUSE = schedule.firehouse;
 
 // How often a phone asks where Santa is.
 export const POLL_MS = 15000;

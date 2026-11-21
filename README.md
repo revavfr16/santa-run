@@ -73,9 +73,15 @@ Google account:
 | Track now | Santa immediately (rehearsal or early start) |
 | Turn tracking off | Vehicle hidden, even during a scheduled run |
 
-Any override lapses back to the schedule after 8 hours, so a forgotten switch
-can't leave the vehicle visible or leave next week's run turned off. Changes
-reach phones within about half a minute.
+On a run night, tracking also stops by itself once the vehicle is back at the
+firehouse within 90 minutes of the planned finish, and stays stopped even if
+the vehicle goes out again. ("Track now" shows it again if that was a mistake.)
+
+Any override lapses back to the schedule by itself, so a forgotten switch
+can't leave the vehicle visible or leave next week's run turned off: at the end
+of that night's run if it was set on a run night, otherwise after 2 hours for
+"Track now" and 8 hours for the others. Changes reach phones within about half
+a minute.
 
 How it is protected:
 

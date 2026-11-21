@@ -29,6 +29,7 @@ const PUBLIC_NOW = {
   live: 'People can see the vehicle on the map right now.',
   paused: 'The vehicle is hidden. People see "Santa is taking a short break."',
   off: 'The vehicle is hidden.',
+  done: 'Santa is back at the firehouse. The vehicle is hidden for the rest of the night.',
 };
 
 function loadGoogle() {
@@ -47,6 +48,7 @@ function loadGoogle() {
 export default function Crew() {
   const button = useRef(null);
   const token = useRef(null);
+  const unsent = useRef(null); // a change that was refused because the sign-in had expired
   const [state, setState] = useState(null); // { mode, until, publicStatus, changedBy, changedAt, you }
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(
@@ -71,7 +73,10 @@ export default function Crew() {
       } else {
         setMessage(data.error || "That didn't work. Try again.");
         // Sign-in lasts an hour; after that Google has to vouch for you again.
-        if (response.status === 401 || response.status === 403) setState(null);
+        if (response.status === 401 || response.status === 403) {
+          if (response.status === 401) unsent.current = mode || null;
+          setState(null);
+        }
       }
     } catch {
       setMessage("Couldn't reach the tracker. Check your signal and try again.");
@@ -91,7 +96,9 @@ export default function Crew() {
           hd: CREW_DOMAIN,
           callback: (response) => {
             token.current = response.credential;
-            send();
+            const mode = unsent.current;
+            unsent.current = null;
+            send(mode);
           },
         });
         window.google.accounts.id.renderButton(button.current, {

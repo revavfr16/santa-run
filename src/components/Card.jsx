@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { DONATE_URL, INSTAGRAM_URL } from '../config';
 import { ROUTES_FINAL, formatDuration, formatLongDay, formatTime } from '../lib/schedule';
 
-function headline({ phase, run, next, now, santa, roadName }) {
+function headline({ phase, run, next, now, santa, roadName, unreachable }) {
   switch (phase) {
     case 'live':
+      if (!santa && unreachable) return ["We can't reach Santa's tracker right now", 'This page keeps trying on its own.'];
       if (!santa) return ['Santa is getting ready to roll', 'He appears on the map as soon as the engine pulls out.'];
       return [roadName ? `Santa is on ${roadName}` : 'Santa is out on the route', null];
     case 'paused':
@@ -60,11 +61,13 @@ function where(night) {
   return night.distance ? `${place}, ${night.distance}` : place;
 }
 
+const sentence = (night) => night.when[0].toUpperCase() + night.when.slice(1);
+
 const WHEN = {
   passed: () => 'Santa has passed',
   here: () => 'Almost here. Head outside!',
-  close: (night) => night.when[0].toUpperCase() + night.when.slice(1),
-  planned: (night) => night.when[0].toUpperCase() + night.when.slice(1),
+  close: sentence,
+  planned: sentence,
 };
 
 /** The card over the bottom of the map: where Santa is, and when he reaches you. */
@@ -76,6 +79,7 @@ export default function Card({
   now,
   santa,
   roadName,
+  unreachable, // the tracker isn't answering
   staleFor,
   hasPin,
   nights, // from describeNights, each with a `road` once it has been looked up
@@ -91,11 +95,11 @@ export default function Card({
   // How much of the card shows on a phone: just its top, the usual amount, or all of it.
   const [detent, setDetent] = useState('peek'); // 'min' | 'peek' | 'open'
   const open = detent === 'open';
-  const raise = () => setDetent((now) => (now === 'min' ? 'peek' : 'open'));
-  const lower = () => setDetent((now) => (now === 'open' ? 'peek' : 'min'));
+  const raise = () => setDetent((at) => (at === 'min' ? 'peek' : 'open'));
+  const lower = () => setDetent((at) => (at === 'open' ? 'peek' : 'min'));
   const [shared, setShared] = useState(false);
   const swipe = useRef(null);
-  const [title, detail] = headline({ phase, run, next, now, santa, roadName });
+  const [title, detail] = headline({ phase, run, next, now, santa, roadName, unreachable });
   const passed = nights.some((night) => night.tonight && night.state === 'passed');
   const askForDonation = phase === 'done' || phase === 'over' || passed;
   // The flyer greets people before and after the run; it steps aside once they have a pin.
@@ -184,7 +188,7 @@ export default function Card({
               <li key={night.id}>
                 <button
                   type="button"
-                  className={`night night-${night.state}`}
+                  className="night"
                   aria-pressed={night.id === viewRunId}
                   onClick={() => onViewNight(night.id)}
                 >

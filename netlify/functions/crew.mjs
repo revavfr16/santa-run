@@ -11,7 +11,6 @@
 //
 // Environment variables:
 //   VITE_GOOGLE_CLIENT_ID  the site's Google sign-in client id (not a secret)
-//   CREW_DOMAIN            Workspace domain allowed to use the switch
 
 import {
   MODES,
@@ -24,14 +23,15 @@ import {
   writeMode,
 } from '../lib/control.mjs';
 
-const DEFAULT_DOMAIN = 'reva16.org';
+// The Workspace domain allowed to use the switch. Keep in step with CREW_DOMAIN in src/config.js.
+const DOMAIN = 'reva16.org';
 
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
   const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
   if (!clientId) return json(503, { error: 'Crew sign-in is not set up' });
-  const domain = process.env.CREW_DOMAIN || DEFAULT_DOMAIN;
+  const domain = DOMAIN;
 
   const [scheme, token] = (req.headers.get('authorization') || '').split(' ');
   if (scheme !== 'Bearer' || !token) return json(401, { error: 'Sign in to continue' });
@@ -64,7 +64,7 @@ export default async (req) => {
   }
 
   const current = await readMode(store, now);
-  return json(200, { ...current, publicStatus: publicStatus(current.mode, now), you: who.email });
+  return json(200, { ...current, publicStatus: await publicStatus(store, current.mode, now), you: who.email });
 };
 
 export const config = { path: '/api/crew' };

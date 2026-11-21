@@ -38,13 +38,18 @@ export function useSanta(demo, demoRoute) {
     if (demo) return undefined;
     let timer;
     let stopped = false;
+    let asking = false;
+    let live = false;
 
     const poll = async () => {
+      if (asking) return;
+      asking = true;
       try {
         const response = await fetch('/api/santa');
         if (!response.ok) throw new Error(`Tracker responded ${response.status}`);
         const data = await response.json();
         if (stopped) return;
+        live = data.status === 'live';
         setState((previous) => ({
           status: data.status,
           // Keep the last known position through a gap in the data.
@@ -57,7 +62,9 @@ export function useSanta(demo, demoRoute) {
         console.error('Could not update Santa:', error);
         if (!stopped) setState((previous) => ({ ...previous, failed: true }));
       }
-      if (!stopped) timer = setTimeout(poll, isNearRun(Date.now()) ? POLL_MS : IDLE_POLL_MS);
+      asking = false;
+      // Keep up with an early start or a rehearsal as closely as a scheduled run.
+      if (!stopped) timer = setTimeout(poll, live || isNearRun(Date.now()) ? POLL_MS : IDLE_POLL_MS);
     };
 
     poll();
@@ -100,6 +107,8 @@ export function useSanta(demo, demoRoute) {
   return state;
 }
 
+const TOP_SPEED = 20; // metres a second, about 45 mph
+
 /**
  * How far along tonight's route Santa is, in metres, or null when he is off it.
  *
@@ -109,10 +118,13 @@ export function useSanta(demo, demoRoute) {
  */
 export function useProgress(route, plan, location, now) {
   const previous = useRef(null);
+  const fixedAt = useRef(0);
+  const lastKnown = useRef(null);
   const [along, setAlong] = useState(null);
 
   useEffect(() => {
     previous.current = null;
+    lastKnown.current = null;
   }, [route]);
 
   useEffect(() => {
@@ -124,18 +136,27 @@ export function useProgress(route, plan, location, now) {
     let next = null;
 
     if (previous.current != null) {
-      const ahead = project(route, point, previous.current - 200, previous.current + 3000);
+      // Only as far ahead as an engine could have driven since the last fix,
+      // so a wobble in the signal can't jump him onto the road back.
+      const seconds = (Date.now() - fixedAt.current) / 1000;
+      const reach = Math.min(3000, Math.max(400, seconds * TOP_SPEED));
+      const ahead = project(route, point, previous.current - 200, previous.current + reach);
       if (ahead && ahead.dist < 250) next = ahead.along;
     }
     if (next == null) {
       const { dist, alongs } = passes(route, point);
       if (dist < 400 && alongs.length) {
-        const expected = plan.alongAt(now.getTime());
+        // Coming back from a detour, he rejoins near where he left; otherwise go by the plan.
+        const expected = lastKnown.current ?? plan.alongAt(now.getTime());
         next = alongs.reduce((a, b) => (Math.abs(b - expected) < Math.abs(a - expected) ? b : a));
       }
     }
 
     previous.current = next;
+    if (next != null) {
+      fixedAt.current = Date.now();
+      lastKnown.current = next;
+    }
     setAlong(next);
     // `now` only matters for the first fix; re-running on every tick is not needed.
     // eslint-disable-next-line react-hooks/exhaustive-deps

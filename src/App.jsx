@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Card from './components/Card';
 import MapView from './components/MapView';
-import { FIREHOUSE } from './config';
-import { METRES_PER_MILE, buildRoute, distance, lineCoordinates, passes, sliceTo } from './lib/geo';
+import { METRES_PER_MILE, buildRoute, lineCoordinates, passes, sliceTo } from './lib/geo';
 import { describeNights, loadPin, locate, savePin } from './lib/pin';
 import { roadAt } from './lib/roads';
 import { ROUTES_FINAL, RUNS, formatShortDay, getPhase } from './lib/schedule';
@@ -112,20 +111,13 @@ export default function App() {
     [clock, tonightPlan, santaAlong]
   );
 
-  // Remember how far he got, for estimates during a break and to know when he's home.
+  // Remember how far he got, for estimates during a break or a detour off the route.
   const farthest = useRef({ runId: null, along: 0 });
   if (underWay && santaAlong != null) farthest.current = { runId: run.id, along: santaAlong };
   const reached = farthest.current.runId === run?.id ? farthest.current.along : null;
 
-  // Back at the firehouse near the end of the route means the night is over,
-  // whatever the clock says.
-  const home =
-    underWay &&
-    located &&
-    distance([located.lng, located.lat], FIREHOUSE) < 200 &&
-    ((reached ?? 0) > 0.900 * tonightRoute?.length || clock >= run.finishAt.getTime() - 30 * MINUTE);
-  const phase = home ? 'done' : scheduled.phase;
-  const santa = home ? null : located;
+  const { phase } = scheduled;
+  const santa = located;
 
   const [pin, setPin] = useState(loadPin);
   const [asking, setAsking] = useState(null); // null | 'locating' | 'picking'
@@ -141,7 +133,7 @@ export default function App() {
 
   const described = useMemo(() => {
     if (!pin) return [];
-    const knownAlong = santaAlong ?? (phase === 'paused' ? reached : null);
+    const knownAlong = santaAlong ?? reached;
     return describeNights({
       pin,
       routes,
@@ -178,11 +170,9 @@ export default function App() {
     setNote(null);
     try {
       const here = await locate();
-      const nearest = Math.min(
-        ...Object.values(routes).map((route) => passes(route, [here.lng, here.lat]).dist),
-        Infinity
-      );
-      if (nearest > 25 * METRES_PER_MILE) {
+      const loaded = Object.values(routes);
+      const nearest = Math.min(...loaded.map((route) => passes(route, [here.lng, here.lat]).dist));
+      if (loaded.length && nearest > 25 * METRES_PER_MILE) {
         setNote("You're a long way from Santa's route right now.");
         setAsking('picking');
         return;
@@ -256,6 +246,7 @@ export default function App() {
         now={now}
         santa={santa}
         roadName={roadName}
+        unreachable={server.failed}
         staleFor={server.seenAt ? Date.now() - server.seenAt : 0}
         hasPin={Boolean(pin)}
         nights={nights}
